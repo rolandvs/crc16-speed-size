@@ -42,6 +42,10 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 
+// CRC-16-CCITT polynomial: 0x1021
+#define CRC16_POLY 0x1021
+
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
