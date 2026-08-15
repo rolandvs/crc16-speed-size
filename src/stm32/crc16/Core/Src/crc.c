@@ -21,6 +21,7 @@
 #include "crc.h"
 
 /* USER CODE BEGIN 0 */
+#include "main.h"
 
 /* USER CODE END 0 */
 
@@ -35,14 +36,20 @@ void MX_CRC_Init(void)
   /* USER CODE END CRC_Init 0 */
 
   /* USER CODE BEGIN CRC_Init 1 */
-
-  /* USER CODE END CRC_Init 1 */
   hcrc.Instance = CRC;
-  hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
-  hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+  hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
+  hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_DISABLE;
   hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
   hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
   hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+
+  hcrc.Instance = CRC;
+  hcrc.Init.GeneratingPolynomial    = CRC16_POLY;          /* 0x1021 */
+  hcrc.Init.CRCLength               = CRC_POLYLENGTH_16B;
+  hcrc.Init.InitValue               = 0xFFFF;
+
+  /* USER CODE END CRC_Init 1 */
+  
   if (HAL_CRC_Init(&hcrc) != HAL_OK)
   {
     Error_Handler();
