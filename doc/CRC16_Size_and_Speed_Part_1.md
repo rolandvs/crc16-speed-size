@@ -1,5 +1,5 @@
 # CRC16 Size and Speed Part 1
-CRC's are used in all kind of applications like verification, integrity checks, etc. Although `CRC8` and `CRC32` are also commonly used, we use `CRC16` to illustrate the speed and size optimalisation/penalty when using it.
+CRC's are used in all kind of applications like verification, integrity checks, etc. Although `CRC-8` and `CRC-32` are also commonly used, we use `CRC-16` to illustrate the speed and size optimalisation/penalty when using it.
 
 For PCs, Desktop and Laptops a slower calculation is not a huge problem, unless lots of data need to be processed. Memory is not a big issue when using tables and otherwise the computational speed is high enough to keep up when used in communication.
 
@@ -10,7 +10,7 @@ _Part-2 will address the use of CRC on STM32 microcontrollers._
 **So how fast is it and what size will it be?**
 
 ## CRC16 comparison
-Using two implementations of CRC16 calculations we tested it on a MacBook Pro M3 MAX 64GB. You can test it yourself. The program should compile under any vanilla C-compiler. See the following text and results:
+Using three implementations of CRC-16 calculations we tested it on a MacBook Pro M3 MAX 64GB. You can test it yourself. The program should compile under any vanilla C-compiler. See the following text and results:
 
 ```bash
 $ cc --version
@@ -23,9 +23,6 @@ Thread model: posix
 $ cc crc16_comparison.c
 $ ls -la
 
--rwxr-xr-x  1 xxxxxx  staff  33752 Aug 14 21:09 a.out
--rw-------  1 xxxxxx  staff   5927 Aug 14 21:07 crc16_comparison.c
-
 $ ./a.out
 ```
 
@@ -35,53 +32,75 @@ Output of the program:
 === CRC-16 Implementation Comparison ===
 
 Verification (10KB data):
-  Table-based CRC: 0xE61A
-  Algorithmic CRC: 0xE61A
+  Table-based  CRC: 0xE61A
+  Nibble-based CRC: 0xE61A
+  Algorithmic  CRC: 0xE61A
 
 === Small Data (100 bytes) ===
 Table-based:
   CRC Result: 0xC272
-  Time: 0.685779 seconds
+  Time: 0.685589 seconds
   Iterations: 1000000
   Time per iteration: 0.000000686 seconds
-  Throughput: 139.06 MB/s
+  Throughput: 139.10 MB/s
+
+Nibble-based:
+  CRC Result: 0xC272
+  Time: 1.062400 seconds
+  Iterations: 1000000
+  Time per iteration: 0.000001062 seconds
+  Throughput: 89.77 MB/s
 
 Algorithmic:
   CRC Result: 0xC272
-  Time: 2.486196 seconds
+  Time: 2.490028 seconds
   Iterations: 1000000
-  Time per iteration: 0.000002486 seconds
-  Throughput: 38.36 MB/s
+  Time per iteration: 0.000002490 seconds
+  Throughput: 38.30 MB/s
 
 === Medium Data (10 KB) ===
 Table-based:
   CRC Result: 0xE61A
-  Time: 0.735653 seconds
+  Time: 0.738042 seconds
   Iterations: 10000
-  Time per iteration: 0.000073565 seconds
-  Throughput: 129.64 MB/s
+  Time per iteration: 0.000073804 seconds
+  Throughput: 129.22 MB/s
+
+Nibble-based:
+  CRC Result: 0xE61A
+  Time: 1.124594 seconds
+  Iterations: 10000
+  Time per iteration: 0.000112459 seconds
+  Throughput: 84.80 MB/s
 
 Algorithmic:
   CRC Result: 0xE61A
-  Time: 5.258921 seconds
+  Time: 5.093631 seconds
   Iterations: 10000
-  Time per iteration: 0.000525892 seconds
-  Throughput: 18.13 MB/s
+  Time per iteration: 0.000509363 seconds
+  Throughput: 18.72 MB/s
 
 === Large Data (1 MB) ===
 Table-based:
   CRC Result: 0x1357
-  Time: 0.735148 seconds
+  Time: 0.737069 seconds
   Iterations: 100
-  Time per iteration: 0.007351480 seconds
-  Throughput: 129.73 MB/s
+  Time per iteration: 0.007370690 seconds
+  Throughput: 129.39 MB/s
+
+Nibble-based:
+  CRC Result: 0x1357
+  Time: 1.124912 seconds
+  Iterations: 100
+  Time per iteration: 0.011249120 seconds
+  Throughput: 84.78 MB/s
 
 Algorithmic:
   CRC Result: 0x1357
-  Time: 5.935047 seconds
+  Time: 5.954141 seconds
   Iterations: 100
-  Time per iteration: 0.059350470 seconds
-  Throughput: 16.07 MB/s
+  Time per iteration: 0.059541410 seconds
+  Throughput: 16.02 MB/s
 ```
 
 ## Code Size
@@ -95,32 +114,52 @@ $ bloaty -d symbols -n 50 a.out
 ```
 SIZE FUNCTION    
 --------------  
-766  _main
 541  _crc16_table
-399  _benchmark
-231  _crc16_algorithmic
 171  _crc16_table_based
+212  _crc16_nibble_table
+ 68  _crc16_table_nibble
+231  _crc16_algorithmic
+850  _main
+399  _benchmark
 
 # other information omitted
 ```
 
 ## Summary
 
-|Data Size|Table[s]  |Algorithmic[s]|Difference  
-|---------|----------|--------------|----------|
-| 100     | 0.685779 | 2.486196     | 3.625x   |
-|  10kB   | 0.735653 | 5.258921     | 7.148x   |
-|   1MB   | 0.735148 | 5.935047     | 8.073x   |
+|Data Size| Table[s] | Nibble[s]| Algorithmic[s]| T > N  | T > A  |  
+|---------|----------|----------|---------------|--------|--------|
+| 100     | 0.685589 | 1.062400 | 2.490028      | 1.549x | 3.632x |
+|  10kB   | 0.738042 | 1.124594 | 5.093631      | 1.524x | 6.902x |
+|   1MB   | 0.737069 | 1.124912 | 5.954141      | 1.526x | 8.074x |
+
 
 |CRC16 function | Code Size | Table Storage |
 |---------------|-----------|---------------|
-| Algorithmic   | 231 bytes | 0             |
+| Algorithmic   | 231 bytes |   0           |
 | Table based   | 171 bytes | 541 bytes     |
+| Nibble table  | 212 bytes |  68 bytes     |
+
+As you can see in the table the full table based CRC is the fastest, the nibble table variant is about 1.5 times slower and the calculation version 3.5 up to 8 times slower. The nibble based table solution is fast and saves on used bytes, and an interesting candidate for embedded code.
+
 
 ## Source Code
 
 ```c
-// crc16_comparison.c
+/**
+ * @file crc16_comparison.c
+ * @brief Compare table-based and algorithmic CRC-16 implementations.
+ *
+ * This program implements three methods for calculating CRC-16 checksums:
+ * 1. Table-based method using a pre-computed lookup table (256 entries).
+ * 2. Algorithmic method that computes the CRC bit-by-bit without a table.
+ * 3. Nibble-based table method (16 entries, 32 bytes) for reduced memory usage.
+ *
+ * The program benchmarks each method using different sizes of test data
+ * and reports the CRC results, execution time, and throughput.
+ *
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -173,6 +212,29 @@ uint16_t crc16_table_based(const uint8_t *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
         uint8_t index = (crc >> 8) ^ data[i];
         crc = (crc << 8) ^ crc16_table[index];
+    }
+    
+    return crc;
+}
+
+// 16-entry nibble table (32 bytes)
+static const uint16_t crc16_table_nibble[16] = {
+    0x0000, 0x1021, 0x2042, 0x3063,
+    0x4084, 0x50a5, 0x60c6, 0x70e7,
+    0x8108, 0x9129, 0xa14a, 0xb16b,
+    0xc18c, 0xd1ad, 0xe1ce, 0xf1ef
+};
+
+// Nibble-based table (32 bytes)
+uint16_t crc16_nibble_table(const uint8_t *data, size_t length) {
+    uint16_t crc = 0xFFFF;
+    
+    for (size_t i = 0; i < length; i++) {
+        // upper 4 bits
+        crc = (crc << 4) ^ crc16_table_nibble[((crc >> 12) ^ (data[i] >> 4)) & 0x0F];
+        
+        // lower 4 bits
+        crc = (crc << 4) ^ crc16_table_nibble[((crc >> 12) ^ (data[i] & 0x0F)) & 0x0F];
     }
     
     return crc;
@@ -238,28 +300,33 @@ int main(void) {
     
     printf("=== CRC-16 Implementation Comparison ===\n\n");
     
-    // Verify both implementations produce same result
-    uint16_t crc_table = crc16_table_based(medium_data, medium_size);
-    uint16_t crc_algo = crc16_algorithmic(medium_data, medium_size);
+        // Verify all implementations produce same result
+    uint16_t crc_table  = crc16_table_based(medium_data, medium_size);
+    uint16_t crc_nibble = crc16_nibble_table(medium_data, medium_size);
+    uint16_t crc_algo   = crc16_algorithmic(medium_data, medium_size);
     
     printf("Verification (10KB data):\n");
-    printf("  Table-based CRC: 0x%04X\n", crc_table);
-    printf("  Algorithmic CRC: 0x%04X\n", crc_algo);
-    printf("  Match: %s\n\n", (crc_table == crc_algo) ? "YES" : "NO");
+    printf("  Table-based  CRC: 0x%04X\n", crc_table);
+    printf("  Nibble-based CRC: 0x%04X\n", crc_nibble);
+    printf("  Algorithmic  CRC: 0x%04X\n", crc_algo);
+    printf("\n");
     
     // Benchmark small data
     printf("=== Small Data (100 bytes) ===\n");
     benchmark("Table-based", crc16_table_based, small_data, small_size, 1000000);
+    benchmark("Nibble-based", crc16_nibble_table, small_data, small_size, 1000000);
     benchmark("Algorithmic", crc16_algorithmic, small_data, small_size, 1000000);
     
     // Benchmark medium data
     printf("=== Medium Data (10 KB) ===\n");
     benchmark("Table-based", crc16_table_based, medium_data, medium_size, 10000);
+    benchmark("Nibble-based", crc16_nibble_table, medium_data, medium_size, 10000);
     benchmark("Algorithmic", crc16_algorithmic, medium_data, medium_size, 10000);
     
     // Benchmark large data
     printf("=== Large Data (1 MB) ===\n");
     benchmark("Table-based", crc16_table_based, large_data, large_size, 100);
+    benchmark("Nibble-based", crc16_nibble_table, large_data, large_size, 100);
     benchmark("Algorithmic", crc16_algorithmic, large_data, large_size, 100);
     
     free(small_data);
