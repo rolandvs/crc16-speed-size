@@ -1,3 +1,9 @@
+# OSX
+.DS_Store
+# temporary dir w/o tracking
+lost&found/
+
+
 # Prerequisites
 *.d
 
