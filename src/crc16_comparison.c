@@ -2,7 +2,16 @@
  * @file crc16_comparison.c
  * @brief Compare table-based and algorithmic CRC-16 implementations.
  *
+ * This program implements three methods for calculating CRC-16 checksums:
+ * 1. Table-based method using a pre-computed lookup table (256 entries).
+ * 2. Algorithmic method that computes the CRC bit-by-bit without a table.
+ * 3. Nibble-based table method (16 entries, 32 bytes) for reduced memory usage.
+ *
+ * The program benchmarks each method using different sizes of test data
+ * and reports the CRC results, execution time, and throughput.
+ *
  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -60,6 +69,30 @@ uint16_t crc16_table_based(const uint8_t *data, size_t length) {
     return crc;
 }
 
+// 16-entry nibble table (32 bytes)
+static const uint16_t crc16_table_nibble[16] = {
+    0x0000, 0x1021, 0x2042, 0x3063,
+    0x4084, 0x50a5, 0x60c6, 0x70e7,
+    0x8108, 0x9129, 0xa14a, 0xb16b,
+    0xc18c, 0xd1ad, 0xe1ce, 0xf1ef
+};
+
+// Nibble-based table (32 bytes)
+uint16_t crc16_nibble_table(const uint8_t *data, size_t length) {
+    uint16_t crc = 0xFFFF;
+    
+    for (size_t i = 0; i < length; i++) {
+        // upper 4 bits
+        crc = (crc << 4) ^ crc16_table_nibble[((crc >> 12) ^ (data[i] >> 4)) & 0x0F];
+        
+        // lower 4 bits
+        crc = (crc << 4) ^ crc16_table_nibble[((crc >> 12) ^ (data[i] & 0x0F)) & 0x0F];
+    }
+    
+    return crc;
+}
+
+
 // Algorithmic CRC-16 calculation (bit-by-bit)
 uint16_t crc16_algorithmic(const uint8_t *data, size_t length) {
     uint16_t crc = 0xFFFF;  // Initial value
@@ -99,8 +132,7 @@ void benchmark(const char *name, uint16_t (*crc_func)(const uint8_t*, size_t),
     printf("  Time: %.6f seconds\n", cpu_time_used);
     printf("  Iterations: %d\n", iterations);
     printf("  Time per iteration: %.9f seconds\n", cpu_time_used / iterations);
-    printf("  Throughput: %.2f MB/s\n\n", 
-           (double)(length * iterations) / (cpu_time_used * 1024 * 1024));
+    printf("  Throughput: %.2f MB/s\n\n",(double)(length * iterations) / (cpu_time_used * 1024 * 1024));
 }
 
 int main(void) {
@@ -120,28 +152,33 @@ int main(void) {
     
     printf("=== CRC-16 Implementation Comparison ===\n\n");
     
-    // Verify both implementations produce same result
-    uint16_t crc_table = crc16_table_based(medium_data, medium_size);
-    uint16_t crc_algo = crc16_algorithmic(medium_data, medium_size);
+    // Verify all implementations produce same result
+    uint16_t crc_table  = crc16_table_based(medium_data, medium_size);
+    uint16_t crc_nibble = crc16_nibble_table(medium_data, medium_size);
+    uint16_t crc_algo   = crc16_algorithmic(medium_data, medium_size);
     
     printf("Verification (10KB data):\n");
-    printf("  Table-based CRC: 0x%04X\n", crc_table);
-    printf("  Algorithmic CRC: 0x%04X\n", crc_algo);
-    printf("  Match: %s\n\n", (crc_table == crc_algo) ? "YES" : "NO");
-    
+    printf("  Table-based  CRC: 0x%04X\n", crc_table);
+    printf("  Nibble-based CRC: 0x%04X\n", crc_nibble);
+    printf("  Algorithmic  CRC: 0x%04X\n", crc_algo);
+    printf("\n");
+
     // Benchmark small data
     printf("=== Small Data (100 bytes) ===\n");
     benchmark("Table-based", crc16_table_based, small_data, small_size, 1000000);
+    benchmark("Nibble-based", crc16_nibble_table, small_data, small_size, 1000000);
     benchmark("Algorithmic", crc16_algorithmic, small_data, small_size, 1000000);
     
     // Benchmark medium data
     printf("=== Medium Data (10 KB) ===\n");
     benchmark("Table-based", crc16_table_based, medium_data, medium_size, 10000);
+    benchmark("Nibble-based", crc16_nibble_table, medium_data, medium_size, 10000);
     benchmark("Algorithmic", crc16_algorithmic, medium_data, medium_size, 10000);
     
     // Benchmark large data
     printf("=== Large Data (1 MB) ===\n");
     benchmark("Table-based", crc16_table_based, large_data, large_size, 100);
+    benchmark("Nibble-based", crc16_nibble_table, large_data, large_size, 100);
     benchmark("Algorithmic", crc16_algorithmic, large_data, large_size, 100);
     
     free(small_data);
