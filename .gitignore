@@ -2,7 +2,7 @@
 .DS_Store
 # temporary dir w/o tracking
 lost&found/
-
+build/
 
 # Prerequisites
 *.d
