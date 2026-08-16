@@ -110,17 +110,17 @@ Using `cc` on OSX from XCode and with help of an utility called `bloaty` (instal
 ```bash
 $ bloaty -d symbols -n 50 a.out
 ```
-
+Both binaries with no options and `-O2` are in the table summarized.
 ```
-SIZE FUNCTION    
---------------  
-541  _crc16_table
-171  _crc16_table_based
-212  _crc16_nibble_table
- 68  _crc16_table_nibble
-231  _crc16_algorithmic
-850  _main
-399  _benchmark
+SIZE -O2  FUNCTION    
+------------------------------  
+541   541  _crc16_table
+171    87  _crc16_table_based
+212   112  _crc16_nibble_table
+ 68    68  _crc16_table_nibble
+231   231  _crc16_algorithmic
+850  1126  _main
+399   327  _benchmark
 
 # other information omitted
 ```
@@ -132,6 +132,11 @@ SIZE FUNCTION
 | 100     | 0.685589 | 1.062400 | 2.490028      | 1.549x | 3.632x |
 |  10kB   | 0.738042 | 1.124594 | 5.093631      | 1.524x | 6.902x |
 |   1MB   | 0.737069 | 1.124912 | 5.954141      | 1.526x | 8.074x |
+| `-O2` Optimalisation ||||||
+| 100     | 0.237961 | 0.562485 | 0.920431      | 2.364x | 3.868x |
+|  10kB   | 0.337900 | 0.677232 | 0.933045      | 2.004x | 2.761x |
+|   1MB   | 0.339211 | 0.679130 | 0.933494      | 2.002x | 2.752x |
+
 
 
 |CRC16 function | Code Size | Table Storage |
@@ -139,6 +144,7 @@ SIZE FUNCTION
 | Algorithmic   | 231 bytes |   0           |
 | Table based   | 171 bytes | 541 bytes     |
 | Nibble table  | 212 bytes |  68 bytes     |
+
 
 As you can see in the table the full table based CRC is the fastest, the nibble table variant is about 1.5 times slower and the calculation version 3.5 up to 8 times slower. The nibble based table solution is fast and saves on used bytes, and an interesting candidate for embedded code.
 
