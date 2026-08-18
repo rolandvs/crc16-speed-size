@@ -12,7 +12,13 @@ For some more implementations of CRCs in a nice library, visit Lammert Bies [git
 
 CRC's are used in all kind of applications like verification, integrity checks, etc. Although CRC-8 and CRC-32 are also commonly used, we use CRC-16 to illustrate the speed and size optimalisation/penalty when using it.
 
+In the [src](src/) directory you will find two programs [crc16_comparison.c](src/crc16_comparison.c) and [crcgen.c](src/crcgen.c). There is also a STM32 project [crc16](src/stm32/crc16/).
+
 For PCs, Desktop and Laptops a slower calculation is not a huge problem, unless lots of data need to be processed. Memory is not a big issue when using tables and otherwise the computational speed is high enough to keep up when used in communication.
 
+See [CRC-16 Size and Speed Part 1](doc/CRC16_Size_and_Speed_Part_1.md)
+
 For embedded controllers it is different as memory is usually much more constrained and clock speeds much lower than desktop machines. We go from Gigabytes to kilobytes and from Gigahertz to Megahertz...
+
+See [CRC-16 Size and Speed Part 2](doc/CRC16_Size_and_Speed_Part_2.md)
 
