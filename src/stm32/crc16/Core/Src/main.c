@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -15,29 +14,17 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
-#include "crc.h"
-#include "usart.h"
-#include "gpio.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
 #include <stdio.h>
 #include <string.h>
-
-/* USER CODE END Includes */
+#include "gpio.h"
+#include "usart.h"
+#include "crc.h"
+#include "main.h"
 
 /* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-
-/* USER CODE END PTD */
-
 /* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
 
 // Benchmark function
 typedef struct {
@@ -49,17 +36,8 @@ typedef struct {
 } BenchmarkResult;
 
 
-/* USER CODE END PD */
-
 /* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
 /* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
 
 // Full 256-entry lookup table (512 bytes)
 static const uint16_t crc16_table_full[256] = {
@@ -105,19 +83,10 @@ static const uint16_t crc16_table_nibble[16] = {
     0xc18c, 0xd1ad, 0xe1ce, 0xf1ef
 };
 
-
-
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
 
 // Full 256-entry table
 uint16_t crc16_full_table(const uint8_t *data, size_t length) {
@@ -161,16 +130,16 @@ uint16_t crc16_algorithmic(const uint8_t *data, size_t length) {
     return crc;
 }
 
-/* Byte-at-a-time — the reference implementation */
+// Byte-at-a-time — the reference implementation
 uint16_t crc16_hardware(const uint8_t *data, size_t length)
 {
     hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
 
-    /* HAL_CRC_Calculate resets DR to InitValue (0xFFFF) on entry */
+    // HAL_CRC_Calculate resets DR to InitValue (0xFFFF) on entry
     return (uint16_t)HAL_CRC_Calculate(&hcrc, (uint32_t *)(uintptr_t)data, (uint32_t)length);
 }
 
-
+#if(0)
 /* Word-at-a-time — same result, fewer bus transactions */
 uint16_t crc16_hardware_fast(const uint8_t *data, size_t length)
 {
@@ -178,7 +147,7 @@ uint16_t crc16_hardware_fast(const uint8_t *data, size_t length)
     size_t   i      = 0;
     size_t   nwords = length / 4U;
 
-    /* Length 0 seeds DR with InitValue and gives us a value to accumulate onto */
+    // Length 0 seeds DR with InitValue and gives us a value to accumulate onto
     hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
     uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t *)(uintptr_t)data, 0U);
 
@@ -188,8 +157,8 @@ uint16_t crc16_hardware_fast(const uint8_t *data, size_t length)
 
         for (size_t k = 0; k < n; k++) {
             uint32_t w;
-            memcpy(&w, data + i + (4U * k), 4U);  /* alignment-safe */
-            chunk[k] = __REV(w);                   /* little-endian -> MSB-first */
+            memcpy(&w, data + i + (4U * k), 4U);  // alignment-safe
+            chunk[k] = __REV(w);                   // little-endian -> MSB-first
         }
 
         crc = HAL_CRC_Accumulate(&hcrc, chunk, (uint32_t)n);
@@ -197,7 +166,7 @@ uint16_t crc16_hardware_fast(const uint8_t *data, size_t length)
         nwords -= n;
     }
 
-    if (i < length) {                              /* 1-3 trailing bytes */
+    if (i < length) {                              // 1-3 trailing bytes
         hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
         crc = HAL_CRC_Accumulate(&hcrc,
                                  (uint32_t *)(uintptr_t)(data + i),
@@ -205,6 +174,42 @@ uint16_t crc16_hardware_fast(const uint8_t *data, size_t length)
     }
 
     return (uint16_t)crc;
+}
+#endif
+
+uint16_t crc16_hardware_fast(const uint8_t *data, size_t len)
+{
+    __HAL_CRC_DR_RESET(&hcrc); 
+
+    while (((uintptr_t)data & 3U) && len) {
+        *(__IO uint8_t *)&CRC->DR = *data++;
+        len--;
+    }
+
+    const uint32_t *w = (const uint32_t *)data;
+
+    size_t n = len >> 2;
+    len &= 3U;
+
+    while (n >= 4U) {
+        CRC->DR = __REV(w[0]);
+        CRC->DR = __REV(w[1]);
+        CRC->DR = __REV(w[2]);
+        CRC->DR = __REV(w[3]);
+
+        w += 4;
+        n -= 4;
+    }
+
+    while (n--)
+        CRC->DR = __REV(*w++);
+
+    const uint8_t *tail = (const uint8_t *)w;
+
+    while (len--)
+        *(__IO uint8_t *)&CRC->DR = *tail++;
+
+    return (uint16_t)CRC->DR;
 }
 
 // benchmarking function
@@ -234,7 +239,6 @@ void benchmark(BenchmarkResult *result, const uint8_t *data, size_t length, int 
     }
 }
 
-
 void uart_putc(uint8_t c) {
     HAL_UART_Transmit(&huart2, &c, 1, HAL_MAX_DELAY);
 }
@@ -253,8 +257,19 @@ void print_result(BenchmarkResult *result) {
     uart_puts(buf);
 }
 
+void test(void) {
+    char buf[100];
+    const uint8_t v[] = "123456789";          /* 9 bytes, not the NUL */
 
-/* USER CODE END 0 */
+    sprintf(buf, "align=%u  len%%4=%u\n", (unsigned)((uintptr_t)v & 3U), 9U % 4U);
+    uart_puts(buf);
+    
+    sprintf(buf, "byte: %04X (expect 29B1)\n", crc16_hardware(v, 9));
+    uart_puts(buf);
+    
+    sprintf(buf, "word: %04X (expect 29B1)\n", crc16_hardware_fast(v, 9));
+    uart_puts(buf);
+}
 
 /**
   * @brief  The application entry point.
@@ -262,33 +277,21 @@ void print_result(BenchmarkResult *result) {
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_CRC_Init();
-  /* USER CODE BEGIN 2 */
 
+  /* check if the part supports the required CRC polynomial */
+  #if !defined(CRC_POL_POL) || !defined(CRC_CR_POLYSIZE)
+  #error "This part's CRC (F1,F2,F4) unit has a fixed 32-bit polynomial. \
+  CRC-16/CCITT-FALSE must use the software table path."
+  #endif
 
   // Test data setup
   #define TEST_SIZE 1000
@@ -298,7 +301,12 @@ int main(void)
   for (size_t i = 0; i < TEST_SIZE; i++) {
       test_data[i] = (uint8_t)(i * 13);
   }
-    
+
+  uart_puts("\n=== CRC-16 on STM32F091RC @ 48MHz ===\n\n");
+  
+  test();
+  uart_puts("\n\n");
+
   // Results array
   BenchmarkResult results[5];
     
@@ -327,18 +335,10 @@ int main(void)
   for (int i = 0; i < 5; i++) {
        print_result(&results[i]);
   }
-    
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
   }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -351,9 +351,7 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+  // Initializes the RCC Oscillators according to the specified parameters
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -361,15 +359,14 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
   RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
+
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
+  // Initializes the CPU, AHB and APB buses clocks
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -378,17 +375,15 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -396,13 +391,11 @@ void SystemClock_Config(void)
   */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
   {
   }
-  /* USER CODE END Error_Handler_Debug */
 }
 #ifdef USE_FULL_ASSERT
 /**
@@ -414,9 +407,7 @@ void Error_Handler(void)
   */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
