@@ -2,7 +2,7 @@
 
 In the previous part we have seen the speed and size of different CRC-16 implementations. In this part we will see how to use the Hardware CRC unit on STM32 microcontrollers.
 
-Also added in the repository is a program [crcgen.c](src/crcgen.c) to generate the CRC table based upon a polynominal you enter. If you use multiple protocols within one program like MODBUS and CCITT you may end up with multiple tables due to the difference of the polynominal. So if you are using the STM32, use the Hardware CRC, which saves space and time.
+Also added in the repository is a program [crcgen.c](../src/crcgen.c) to generate the CRC table based upon a polynominal you enter. If you use multiple protocols within one program like MODBUS and CCITT you may end up with multiple tables due to the difference of the polynominal. So if you are using the STM32, use the Hardware CRC, which saves space and time.
 
 # CRC16 using STM32 Hardware CRC
 
