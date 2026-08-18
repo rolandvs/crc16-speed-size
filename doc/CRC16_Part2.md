@@ -6,6 +6,7 @@ The compiled program inherits the test on CRC16 using full and nibble sized tabl
 
 The HW CRC is the fastest and uses less energy. It is available on all STM32 micro-controllers, so why not use it!?
 
+In a first test the Hardware CRC (word) came out worse (561ms) than full table CRC. This was not due the hardware accelerator, but the code that was feeding the bytes.
 
 ```
 === CRC-16 on STM32F091RC @ 48MHz ===
