@@ -1,7 +1,8 @@
 /*
- * crcgen.c - generate a 256-entry CRC-16 lookup table as pasteable C source.
+ * crcgen.c - generate a 256-entry CRC-16 lookup table as C source to paste.
  *
- * Build: cc -O2 -std=c99 -Wall -Wextra -o crcgen crcgen.c
+ * Build:
+ *  cc -O2 -std=c99 -Wall -Wextra -o crcgen crcgen.c
  *
  * Usage: crcgen [-p poly] [-r|-n] [-i init] [-x xorout] [-t name] [-c]
  *   -p  polynomial, hex or decimal          (default 0xA001)
@@ -12,7 +13,19 @@
  *   -t  identifier for the emitted array    (default crc_tab16)
  *   -c  emit the array as const (default: plain, matching the original)
  *
+ * Examples:
+ *  ./crcgen -p 0xA001 -r -i 0xFFFF -t crc_tab16_refl_8005 -c
+ *  ./crcgen -p 0x1021 -n -i 0xFFFF -t crc_tab16_norm_1021 -c
+ *
  * Always prints the check value: CRC of the ASCII string "123456789".
+ *
+ * CRC can be `non-reflected` like: CCITT-FALSE, XMODEM, AUG-CCITT, GENIBUS.
+ * CRC can be `reflected like: MODBUS, ARC, X-25, KERMIT, USB, or CRC-32
+ * 
+ * License: MIT, see LICENSE file.
+ * 
+ * Some code is copied from `init_crc16_tab()` and is (c)2026 by Lammert Bies
+ * 
  */
 
 #include <stdio.h>
