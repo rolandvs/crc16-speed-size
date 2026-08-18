@@ -49,3 +49,22 @@ Hardware CRC (byte)       CRC: 0x3AEA  Time:   123 ms  Speed: 8130081 bytes/s
 Hardware CRC (word)       CRC: 0x3AEA  Time:    36 ms  Speed: 27777777 bytes/s
 ```
 
+The code size comparison can be derived from:
+
+```bash
+$ arm-none-eabi-nm --print-size --size-sort --radix=d build/crc16.elf | grep -i "crc"
+```
+
+# Speed and Size Comparison
+
+Embedded C code on a STM32F091RC running at 48MHz.
+
+| CRC16 function | Code Size | Table Storage | Speed  |
+|----------------|-----------|---------------|--------|
+| Algorithmic    |  72 bytes |   0           | 2319ms |
+| Table based    |  52 bytes | 512 bytes     |  376ms |
+| Nibble table   |  72 bytes |  32 bytes     |  585ms |
+| HW CRC (byte)  |  28 bytes |   0           |  123ms |
+| HW CRC (word)  | 192 bytes |   0           |   36ms |
+
+Initialisation and setup code is not counted, only the functions.
